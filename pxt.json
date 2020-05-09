@@ -1,18 +1,19 @@
 {
-    "name": "pxt-nokialcd",
-    "version": "0.0.0",
-    "description": "",
+    "name": "nokialcd",
+    "version": "0.0.1",
+    "description": "MTKilpatrick NokiaLCD",
+    "license": "MIT",
     "dependencies": {
-        "core": "*",
-        "radio": "*"
+        "core": "*"
     },
     "files": [
         "README.md",
-        "main.ts"
+        "nokialcd.cpp",
+        "shims.d.ts",
+        "nokialcd.ts"
     ],
     "testFiles": [
         "test.ts"
     ],
-    "public": false,
-    "additionalFilePaths": []
+    "public": true
 }
