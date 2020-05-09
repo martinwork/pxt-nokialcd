@@ -1,10 +1,10 @@
 let runningtime = 0
 let j = 0
 let x = 0
-nokiaLCD.init()
+nokialcd.init()
 let data = pins.createBuffer(504)
-nokiaLCD.setX(0)
-nokiaLCD.setX(0)
+nokialcd.setX(0)
+nokialcd.setX(0)
 basic.forever(function () {
     x = 15
     while (true) {
@@ -13,7 +13,7 @@ basic.forever(function () {
         }
         runningtime = input.runningTimeMicros()
         for (let index = 0; index < 100; index++) {
-            nokiaLCD.writeBuffer(data)
+            nokialcd.writeBuffer(data)
         }
         basic.showNumber(input.runningTimeMicros() - runningtime)
         j += 1

@@ -1,7 +1,7 @@
 {
     "name": "nokialcd",
     "version": "0.0.1",
-    "description": "MTKilpatrick NokiaLCD",
+    "description": "MTKilpatrick Nokialcd",
     "license": "MIT",
     "dependencies": {
         "core": "*"
@@ -15,5 +15,7 @@
     "testFiles": [
         "test.ts"
     ],
-    "public": true
+    "public": true,
+    "preferredEditor": "tsprj",
+    "installedVersion": "workspace:96dd7750-1020-40c1-0fef-408c4c64e151"
 }

@@ -6,6 +6,16 @@ using namespace pxt;
 #endif
 
 namespace nokialcd {
+
+    //%
+    void writeBuf(Buffer buf) {
+        pins::digitalWritePin(LCD_CE, 0);
+        for (let i = 0; i < buf->length; i++) {
+            pins.spiWrite(buf->data[i]);
+        }
+        pins::digitalWritePin(LCD_CE, 1);
+    }
+    
     //%
     int getFontDataByte(int index) {
         if(index < 0 || index >= 475){
