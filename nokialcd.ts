@@ -2,6 +2,14 @@
 * Custom blocks
 */
 
+enum Plots {
+    //% block="line"
+    Line = 0,
+    //% block="box"
+    Box = 1,
+    //% block="rectangle"
+    Rect = 2
+}
 
 enum LCDDisplayModes {
     Normal = 0,
@@ -36,7 +44,7 @@ namespace nokialcd {
     //% block="pixel at x %x y %y %state"
     //% state.shadow="toggleOnOff" state.defl=true
     //% inlineInputMode=inline
-    export function pixel(x: number, y: number, state: boolean) {
+    export function pixel(x: number, y: number, state: boolean): void {
         if (x > 83) { return }
         if (y > 47) { return }
         if ((x | y) < 0) { return }
@@ -67,7 +75,7 @@ namespace nokialcd {
     }
     //% blockId=nokialcd_show
     //% block="show"
-    export function show() {
+    export function show(): void {
         writeBuffer(bytearray)
     }
 
@@ -218,7 +226,7 @@ namespace nokialcd {
         return (displaymode || 0)
     }
 
-    function writeFunctionSet(pd: number, v: number, h: number) {
+    function writeFunctionSet(pd: number, v: number, h: number): void {
         pins.digitalWritePin(LCD_DC, CMD)
         let byte = 0x20 | (pd << 2) | (v << 1) | (h & 1)
         writeByte(byte)
@@ -229,7 +237,7 @@ namespace nokialcd {
 
     //% blockId=nokialcd_display_mode
     //% block="set display mode %mode"
-    export function lcdDisplayMode(mode: number) {
+    export function lcdDisplayMode(mode: number): void {
         pins.digitalWritePin(LCD_DC, CMD)
         _DE = ((mode & 2) << 1) + (mode & 1)
         writeByte(0x08 | _DE)
@@ -237,7 +245,7 @@ namespace nokialcd {
 
     }
 
-    export function lcdExtendedFunctions(temp: number, bias: number, vop: number) {
+    export function lcdExtendedFunctions(temp: number, bias: number, vop: number): void {
         writeFunctionSet(_PD, _V, 1)
         pins.digitalWritePin(LCD_DC, CMD)
         writeByte(0x04 | (0x03 & temp))
@@ -248,7 +256,7 @@ namespace nokialcd {
 
     //% blockId=nokialcd_init
     //% block="init"
-    export function init() {
+    export function init(): void {
         _V = 1
         pins.digitalWritePin(LCD_RST, 0)
         pins.spiFormat(8, 3)
@@ -262,29 +270,30 @@ namespace nokialcd {
     }
     //% blockId=nokialcd_clear
     //% block="clear screen"
-    export function clear() {
+    export function clear(): void {
         bytearray.fill(0)
         writeBuffer(bytearray)
     }
 
     //% blockId=nokialcd_write_byte
     //% block="LCD Wrt  %data"
-    export function writeByte(data: number) {
+    export function writeByte(data: number): void {
         pins.digitalWritePin(LCD_CE, 0)
         pins.spiWrite(data)
         pins.digitalWritePin(LCD_CE, 1)
     }
 
-    //% blockId=nokialcd_write_buf
+    //% blockId=nokialcd_dog
     //% block="LCD write %data"
-    //% shim=nokialcd::writeBuf
-    export function writeBuf(data: Buffer) {
+    export function dog(): void {
+        writeBuf(bytearray)
+        basic.pause(1000)
     }
 
 
     //% blockId=nokialcd_write_buffer
     //% block="LCD Wrt %data"
-    export function writeBuffer(data: Buffer) {
+    export function writeBuffer(data: Buffer): void {
         pins.digitalWritePin(LCD_CE, 0)
         for (let i = 0; i < data.length(); i++) {
             pins.spiWrite(data[i])
@@ -294,7 +303,7 @@ namespace nokialcd {
 
     //% blockId=nokialcd_sety
     //% block="set Y address %y"
-    export function setY(y: number) {
+    export function setY(y: number): void {
         pins.digitalWritePin(LCD_DC, CMD)
         writeByte(0x40 + y)
         pins.digitalWritePin(LCD_DC, DAT)
@@ -302,7 +311,7 @@ namespace nokialcd {
     }
     //% blockId=nokialcd_setx
     //% block="set X address %x"
-    export function setX(x: number) {
+    export function setX(x: number): void {
         pins.digitalWritePin(LCD_DC, CMD)
         writeByte(0x80 + x)
         pins.digitalWritePin(LCD_DC, DAT)
