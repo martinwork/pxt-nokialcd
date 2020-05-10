@@ -9,7 +9,7 @@
     "files": [
         "nokialcd.ts",
         "shims.d.ts",
-        "enums.d.ts"
+        "enums.d.ts",
         "README.md",
         "nokialcd.cpp",
     ],
