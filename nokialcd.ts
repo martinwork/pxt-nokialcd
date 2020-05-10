@@ -266,8 +266,8 @@ namespace nokialcd {
         lcdExtendedFunctions(_TEMP, _BIAS, _VOP)
         writeFunctionSet(_PD, _V, 0)
         lcdDisplayMode(2)
-
     }
+
     //% blockId=nokialcd_clear
     //% block="clear screen"
     export function clear(): void {
@@ -284,12 +284,15 @@ namespace nokialcd {
     }
 
     //% blockId=nokialcd_dog
-    //% block="LCD write %data"
+    //% block="LCD write"
     export function dog(): void {
-        writeBuf(bytearray)
+        writeBuf()
         basic.pause(1000)
     }
 
+function writeBuf() : void {
+
+}
 
     //% blockId=nokialcd_write_buffer
     //% block="LCD Wrt %data"

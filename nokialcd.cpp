@@ -4,7 +4,7 @@ using namespace pxt;
 
 namespace nokialcd {
     //%
-    void writeBuf(Buffer buf) {
+    void writeBuf() {
 //        uBit.display.scroll("HELLO WORLD!");
 //        uBit.pins.digitalWritePin(0,1);
 //        MicroBitPin P0(MICROBIT_ID_IO_P1, MICROBIT_PIN_P1, PIN_CAPABILITY_BOTH);

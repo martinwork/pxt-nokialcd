@@ -7,16 +7,15 @@
         "core": "*"
     },
     "files": [
+        "nokialcd.cpp",
         "nokialcd.ts",
         "shims.d.ts",
-        "enums.d.ts",
-        "README.md",
-        "nokialcd.cpp"
+        "README.md"
     ],
     "testFiles": [
         "test.ts"
     ],
     "public": true,
     "preferredEditor": "tsprj",
-    "installedVersion": "workspace:2e1bc7a7-5c60-417e-da03-6056725f75b0"
+    "installedVersion": "workspace:3aca2ade-2e19-4fb2-520a-0b5ae0f8c34a"
 }
