@@ -11,7 +11,7 @@
         "shims.d.ts",
         "enums.d.ts",
         "README.md",
-        "nokialcd.cpp",
+        "nokialcd.cpp"
     ],
     "testFiles": [
         "test.ts"
