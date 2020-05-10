@@ -7,10 +7,11 @@
         "core": "*"
     },
     "files": [
+        "nokialcd.ts",
+        "shims.d.ts",
+        "enums.d.ts"
         "README.md",
         "nokialcd.cpp",
-        "shims.d.ts",
-        "nokialcd.ts"
     ],
     "testFiles": [
         "test.ts"
