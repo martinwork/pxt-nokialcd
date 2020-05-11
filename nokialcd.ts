@@ -35,10 +35,8 @@ namespace nokialcd {
     const YMUL = [0, 84, 168, 252, 336, 420, 504]
     const CMD = 0
     const DAT = 1
-    const SET_X = 0x80
-    const SET_Y = 0x40
-    const LCD_RST = DigitalPin.P0
-    const LCD_CE = DigitalPin.P8
+    const LCD_RST = DigitalPin.P8
+    const LCD_CE = DigitalPin.P12
     const LCD_DC = DigitalPin.P16
     const _TEMP = 0x00
     const _BIAS = 0x03
@@ -327,6 +325,7 @@ namespace nokialcd {
         pins.spiFormat(8, 3)
         pins.spiPins(DigitalPin.P15, DigitalPin.P14, DigitalPin.P13)
         pins.spiFrequency(1000000)
+        basic.pause(500)
         pins.digitalWritePin(LCD_RST, 1)
         lcdExtendedFunctions(_TEMP, _BIAS, _VOP)
         writeFunctionSet(_PD, 0, 0)
