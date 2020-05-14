@@ -32,18 +32,65 @@ namespace nokialcd {
     const FILL_X = hex`fffefcf8f0e0c08000`
     const FILL_B = hex`0103070f1f3f7fffff`
     const TWOS = hex`0102040810204080`
-    const YMUL = [0, 84, 168, 252, 336, 420, 504]
-    const CMD = 0
-    const DAT = 1
+    const LCD_CMD = 0
+    const LCD_DAT = 1
     const LCD_RST = DigitalPin.P8
     const LCD_CE = DigitalPin.P12
     const LCD_DC = DigitalPin.P16
-    const _TEMP = 0x00
-    const _BIAS = 0x03
-    const _VOP = 0x3f
-    let _DE: number = 0x00
-    let _PD: number = 0
-    let bytearray: Buffer = pins.createBuffer(84 * 6)
+    const LCD_TEMP = 0x00
+    const LCD_BIAS = 0x03
+    const LCD_VOP = 0x3f
+    let LCD_DE: number = 0x00
+    let bytearray: Buffer = initBuffer()
+
+    //% shim=nokialcd::initBuffer
+    function initBuffer(): Buffer {
+        return pins.createBuffer(504)
+    }
+    //% shim=nokialcd::SPIinit
+    function SPIinit(): void {
+        return
+    }
+    //% blockId=nokialcd_write_byte
+    //% block="LCD Wrt  %data"
+    export function writeByte(data: number): void {
+        pins.digitalWritePin(LCD_CE, 0)
+        pins.spiWrite(data)
+        pins.digitalWritePin(LCD_CE, 1)
+    }
+    //% shim=nokialcd::writeFunctionSet
+    function writeFunctionSet(v: number, h: number): void {
+        pins.digitalWritePin(LCD_DC, LCD_CMD)
+        let byte = 0x20 | (v << 1) | (h & 1)
+        writeByte(byte)
+        pins.digitalWritePin(LCD_DC, LCD_DAT)
+    }
+    export function init(): void {
+        basic.showNumber(1)
+        SPIinit()
+        basic.showNumber(2)
+        writeFunctionSet(0, 1)
+        basic.showNumber(3)
+        lcdExtendedFunctions(0, 3, 63)
+        writeFunctionSet(0, 0)
+        lcdDisplayMode(2)
+        setX(0)
+        setY(0)
+        setState(true)
+        basic.showNumber(4)
+    }
+
+    //% shim=nokialcd::writeSPIBuf
+    function writeSPIBuf(): void {
+        return
+    }
+
+    //% blockId=nokialcd_show
+    //% block="show"
+    export function show(): void {
+        setY(0)
+        writeSPIBuf()
+    }
 
     //% shim=TD_ID
     //% blockId="dir_conv" block="%dir"
@@ -70,40 +117,20 @@ namespace nokialcd {
     //% block="pixel at x %x y %y %state"
     //% state.shadow="toggleOnOff" state.defl=true
     //% inlineInputMode=inline
+    //% shim=nokialcd::pixel
     export function pixel(x: number, y: number, state: boolean): void {
-        if (x > 83) { return }
-        if (y > 47) { return }
-        if ((x | y) < 0) { return }
-        let r = x + YMUL[(y >> 3)]
-        y = 1 << (y & 0x07)
-        if (state) {
-            bytearray[r] = bytearray[r] | y
-        } else {
-            bytearray[r] = bytearray[r] & ~y
-        }
+        return
     }
 
-    //% blockId=nokialcd_scrollrow
-    //% block="scroll display row %row %direction=dir_conv"
-    export function scrollRow(row: number, direction: number): void {
-        if ((row < 0) || (row > 5)) return
-        let r = YMUL[row]
-        let r1 = YMUL[row + 1] - 1
-        if (direction & 1) {
-            if (direction & 2) {
-                // left
-                for (; r < r1; r++) {
-                    bytearray[r] = bytearray[r + 1]
-                }
-                bytearray[r] = 0
-            } else {
-                // right
-                for (; r1 > r; r1--) {
-                    bytearray[r1] = bytearray[r1 - 1]
-                }
-                bytearray[r] = 0
-            }
-        }
+    //% shim=nokialcd::scrollRow
+    //% block="scroll row %row direction %direction=dir_conv step %step"
+    export function scrollRow(row: number, direction: number, step: number): void {
+        return
+    }
+
+    //% blockId=nokialcd_display_row
+    //% block="show row %row"
+    export function displayRow(row: number): void {
     }
 
     //% blockId=nokialcd_scroll
@@ -137,201 +164,52 @@ namespace nokialcd {
         }
     }
 
+    //% shim=nokialcd::setState
+    function setState(s: boolean) {
+        return
+    }
+
+    //% shim=nokialcd::pLine
+    function pLine(x0: number, y0: number, x1: number, y1: number): void {
+        return
+    }
+
     //% blockId=nokialcd_plot
     //% block="draw %plot=plot_conv from x %x0 y %y0 to x %x1 y %y1 $state"
     //% state.shadow="toggleOnOff" state.defl=true
     //% inlineInputMode=inline
     export function plot(plot: Plots, x0: number, y0: number, x1: number, y1: number, state: boolean): void {
+        setState(state)
         switch (plot) {
-            case 0: { plotLine(x0, y0, x1, y1, state); break }
-            case 1: { plotBox(x0, y0, x1, y1, state); break }
-            case 2: { plotRect(x0, y0, x1, y1, state); break }
-            default: plotLine(x0, y0, x1, y1, state);
-        }
-    }
-
-
-    //% blockId=nokialcd_show
-    //% block="show"
-    export function show(): void {
-        writeBuffer(bytearray)
-    }
-
-    function plotVLine(x: number, y0: number, y1: number, state: boolean) {
-        let y = y0
-        if (y0 > y1) { y = y1; y1 = y0 }
-        if (((x | y1) < 0) || (x > 83)) return
-        if (y < 0) y = 0
-        if (y1 > 47) y1 = 47
-        if ((y >> 3) == (y1 >> 3)) {
-            let bitmask = FILL_X[y & 7] ^ FILL_X[(y1 & 7) + 1]
-            let r = x + YMUL[(y >> 3)]
-            if (state) bytearray[r] |= bitmask
-            else bytearray[r] &= ~bitmask
-        } else {
-            let bitmask1 = FILL_X[y & 7]
-            let bitmask2 = FILL_B[y1 & 7]
-            let j = (y1 >> 3) - (y >> 3) - 1
-            let r = x + YMUL[(y >> 3)]
-            if (state) bytearray[r] |= bitmask1
-            else bytearray[r] &= ~bitmask1
-            r = r + 84
-            while (j > 0) {
-                if (state) bytearray[r] = 0xff
-                else bytearray[r] = 0
-                j -= 1; r = r + 84
+            case 0: { pLine(x0, y0, x1, y1); break }
+            case 1: { pBox(x0, y0, x1, y1); break }
+            case 2: {
+                hLine(x0, x1, y0)
+                hLine(x0, x1, y1)
+                vLine(x0, y0, y1)
+                vLine(x1, y0, y1)
+                break
             }
-            if (state) bytearray[r] |= bitmask2
-            else bytearray[r] &= ~bitmask2
+            default: pLine(x0, y0, x1, y1)
         }
     }
 
-    function plotHLine(x0: number, x1: number, y: number, state: boolean) {
-        let x = x0
-        if (x0 > x1) { x = x1; x1 = x0 }
-        if (((x1 | y) < 0) || (y > 47)) return
-        if (x < 0) x = 0
-        if (x1 > 83) x1 = 83
-        let bitmask = TWOS[y & 7]
-        let r = x + YMUL[(y >> 3)]
-        if (state) {
-            for (; x <= x1; x++ , r++)  bytearray[r] |= bitmask
-        } else {
-            for (; x <= x1; x++ , r++) bytearray[r] &= ~bitmask
-        }
+
+
+
+    //% shim=nokialcd::vLine
+    function vLine(x: number, y0: number, y1: number): void {
+        return
     }
 
-    function plotLine(x0: number, y0: number, x1: number, y1: number, state: boolean): void {
-        let dx = Math.abs(x1 - x0)
-        if (dx == 0) {
-            plotVLine(x0, y0, y1, state)
-            return
-        }
-        let dy = Math.abs(y1 - y0)
-        if (dy == 0) {
-            plotHLine(x0, x1, y0, state)
-            return
-        }
-        let x = x0, y = y0
-        if (dx > dy) {
-            if (x0 > x1) { x = x1; y = y1; x1 = x0; y1 = y0 }
-            let yc = (y1 > y) ? 1 : -1
-            let mid = (x + x1) >> 1
-            let a = dy << 1, p = a - dx, b = p - dx
-            pixel(x, y, state)
-            while (x < x1) {
-                if ((p < 0) || ((p == 0) && (x >= mid))) { p += a }
-                else { p = p + b; y += yc }
-                x++; pixel(x, y, state)
-            }
-        } else {
-            if (y0 > y1) { x = x1; y = y1; x1 = x0; y1 = y0 }
-            let xc = (x1 > x) ? 1 : -1
-            let mid = (y + y1) >> 1
-            let a = dx << 1, p = a - dy, b = p - dy
-            pixel(x, y, state)
-            while (y < y1) {
-                if ((p < 0) || ((p == 0) && (y >= mid))) { p += a }
-                else { p = p + b; x += xc }
-                y++; pixel(x, y, state)
-            }
-        }
+    //% shim=nokialcd::hLine
+    function hLine(x0: number, x1: number, y: number): void {
+        return
     }
 
-    function plotBox(x0: number, y0: number, x1: number, y1: number, state: boolean): void {
-        let x = x0, y = y0
-        if (x1 < x0) { x = x1; x1 = x0 }
-        if (y1 < y0) { y = y1; y1 = y0 }
-        if ((y1 | x1) < 0) { return }
-        if (y < 0) y = 0
-        if (y1 > 47) y1 = 47
-        if (x1 > 83) x1 = 83
-        if ((y >> 3) == (y1 >> 3)) {
-            let bitmask = FILL_X[y & 7] ^ FILL_X[(y1 & 7) + 1]
-            let r = x + YMUL[(y >> 3)]
-            if (state) {
-                for (; x <= x1; x++ , r++) bytearray[r] |= bitmask
-            } else {
-                for (; x <= x1; x++ , r++) bytearray[r] &= ~bitmask
-            }
-        } else {
-            let j = (y1 >> 3) - (y >> 3) - 1
-            let r = YMUL[(y >> 3)]
-            if (state) {
-                let bitmask = FILL_X[y & 7]
-                for (let i = x; i <= x1; i++)  bytearray[i + r] |= bitmask
-                r = r + 84
-                while (j > 0) {
-                    for (let i = x; i <= x1; i++)  bytearray[i + r] = 0xff
-                    j--
-                    r = r + 84
-                }
-                bitmask = FILL_B[y1 & 7]
-                for (let i = x; i <= x1; i++)  bytearray[i + r] |= bitmask
-            } else {
-                let bitmask = ~FILL_X[y & 7]
-                for (let i = x; i <= x1; i++)  bytearray[i + r] &= bitmask
-                r = r + 84
-                while (j > 0) {
-                    for (let i = x; i <= x1; i++)  bytearray[i + r] = 0
-                    j--
-                    r = r + 84
-                }
-                bitmask = ~FILL_B[y1 & 7]
-                for (let i = x; i <= x1; i++)  bytearray[i + r] &= bitmask
-            }
-        }
-    }
-
-    function plotRect(x0: number, y0: number, x1: number, y1: number, state: boolean): void {
-        plotHLine(x0, x1, y0, state)
-        plotHLine(x0, x1, y1, state)
-        plotVLine(x0, y0, y1, state)
-        plotVLine(x1, y0, y1, state)
-    }
-
-
-    function writeFunctionSet(pd: number, v: number, h: number): void {
-        pins.digitalWritePin(LCD_DC, CMD)
-        let byte = 0x20 | (pd << 2) | (v << 1) | (h & 1)
-        writeByte(byte)
-        _PD = pd
-        pins.digitalWritePin(LCD_DC, DAT)
-    }
-
-    //% blockId=nokialcd_display_mode
-    //% block="set display mode %mode"
-    export function lcdDisplayMode(mode: number): void {
-        pins.digitalWritePin(LCD_DC, CMD)
-        _DE = ((mode & 2) << 1) + (mode & 1)
-        writeByte(0x08 | _DE)
-        pins.digitalWritePin(LCD_DC, DAT)
-
-    }
-
-    export function lcdExtendedFunctions(temp: number, bias: number, vop: number): void {
-        writeFunctionSet(_PD, 0, 1)
-        pins.digitalWritePin(LCD_DC, CMD)
-        writeByte(0x04 | (0x03 & temp))
-        writeByte(0x10 | (0x07 & bias))
-        writeByte(0x80 | (0x7f & vop))
-        writeFunctionSet(_PD, 0, 0)
-    }
-
-    //% blockId=nokialcd_init
-    //% block="init"
-    export function init(): void {
-        pins.digitalWritePin(LCD_RST, 0)
-        pins.spiFormat(8, 3)
-        pins.spiPins(DigitalPin.P15, DigitalPin.P14, DigitalPin.P13)
-        pins.spiFrequency(1000000)
-        basic.pause(500)
-        pins.digitalWritePin(LCD_RST, 1)
-        lcdExtendedFunctions(_TEMP, _BIAS, _VOP)
-        writeFunctionSet(_PD, 0, 0)
-        lcdDisplayMode(2)
-        setX(0)
-        setY(0)
+    //% shim=nokialcd::pBox
+    function pBox(x0: number, y0: number, x1: number, y1: number): void {
+        return
     }
 
     //% blockId=nokialcd_clear
@@ -341,13 +219,6 @@ namespace nokialcd {
         writeBuffer(bytearray)
     }
 
-    //% blockId=nokialcd_write_byte
-    //% block="LCD Wrt  %data"
-    export function writeByte(data: number): void {
-        pins.digitalWritePin(LCD_CE, 0)
-        pins.spiWrite(data)
-        pins.digitalWritePin(LCD_CE, 1)
-    }
 
 
     //% blockId=nokialcd_write_buffer
@@ -361,20 +232,43 @@ namespace nokialcd {
     }
 
     //% blockId=nokialcd_sety
-    //% block="set Y address %y"
+    //% block="set y address %y"
+    //% shim=nokialcd::setYAddr
     export function setY(y: number): void {
-        pins.digitalWritePin(LCD_DC, CMD)
-        writeByte(0x40 + y)
-        pins.digitalWritePin(LCD_DC, DAT)
-
+        return
     }
 
     //% blockId=nokialcd_setx
     //% block="set X address %x"
+    //% shim=nokialcd::setXAddr
     export function setX(x: number): void {
-        pins.digitalWritePin(LCD_DC, CMD)
-        writeByte(0x80 + x)
-        pins.digitalWritePin(LCD_DC, DAT)
+        return
     }
+    //% shim=nokialcd::init2
+    export function init2(): void {
+        return
+    }
+
+
+    //% blockId=nokialcd_display_mode
+    //% block="set display mode %mode"
+    export function lcdDisplayMode(mode: number): void {
+        pins.digitalWritePin(LCD_DC, LCD_CMD)
+        LCD_DE = ((mode & 2) << 1) + (mode & 1)
+        writeByte(0x08 | LCD_DE)
+        pins.digitalWritePin(LCD_DC, LCD_DAT)
+
+    }
+
+    export function lcdExtendedFunctions(temp: number, bias: number, vop: number): void {
+        pins.digitalWritePin(LCD_DC, LCD_CMD)
+        writeByte(0x04 | (0x03 & temp))
+        writeByte(0x10 | (0x07 & bias))
+        writeByte(0x80 | (0x7f & vop))
+    }
+
+
 }
+basic.showNumber(1)
 nokialcd.init()
+
