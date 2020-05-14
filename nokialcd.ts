@@ -29,67 +29,40 @@ enum LCDDisplayModes {
 
 //% weight=100 color=#0fbc11
 namespace nokialcd {
+
+
     const FILL_X = hex`fffefcf8f0e0c08000`
     const FILL_B = hex`0103070f1f3f7fffff`
     const TWOS = hex`0102040810204080`
-    const LCD_CMD = 0
-    const LCD_DAT = 1
-    const LCD_RST = DigitalPin.P8
-    const LCD_CE = DigitalPin.P12
-    const LCD_DC = DigitalPin.P16
-    const LCD_TEMP = 0x00
-    const LCD_BIAS = 0x03
-    const LCD_VOP = 0x3f
-    let LCD_DE: number = 0x00
     let bytearray: Buffer = initBuffer()
 
     //% shim=nokialcd::initBuffer
     function initBuffer(): Buffer {
         return pins.createBuffer(504)
     }
+
     //% shim=nokialcd::SPIinit
     function SPIinit(): void {
         return
     }
-    //% blockId=nokialcd_write_byte
-    //% block="LCD Wrt  %data"
-    export function writeByte(data: number): void {
-        pins.digitalWritePin(LCD_CE, 0)
-        pins.spiWrite(data)
-        pins.digitalWritePin(LCD_CE, 1)
-    }
-    //% shim=nokialcd::writeFunctionSet
-    function writeFunctionSet(v: number, h: number): void {
-        pins.digitalWritePin(LCD_DC, LCD_CMD)
-        let byte = 0x20 | (v << 1) | (h & 1)
-        writeByte(byte)
-        pins.digitalWritePin(LCD_DC, LCD_DAT)
-    }
+
+    //% block="init LCD display"
+    //% blockId=nokialcd_init
     export function init(): void {
-        basic.showNumber(1)
+        //    pins.spiFormat(8, 0)
+        pins.spiFrequency(1000000)
         SPIinit()
-        basic.showNumber(2)
-        writeFunctionSet(0, 1)
-        basic.showNumber(3)
-        lcdExtendedFunctions(0, 3, 63)
-        writeFunctionSet(0, 0)
-        lcdDisplayMode(2)
-        setX(0)
-        setY(0)
-        setState(true)
-        basic.showNumber(4)
     }
 
-    //% shim=nokialcd::writeSPIBuf
-    function writeSPIBuf(): void {
+    //% shim=nokialcd::writeBufToLCD
+    function writeBufToLCD(): void {
         return
     }
 
-    //% blockId=nokialcd_show
-    //% block="show"
+    //% block="show LCD display"
+    //% blocId=nokialcd_show
     export function show(): void {
-        setY(0)
-        writeSPIBuf()
+        writeBufToLCD()
     }
 
     //% shim=TD_ID
@@ -194,9 +167,6 @@ namespace nokialcd {
         }
     }
 
-
-
-
     //% shim=nokialcd::vLine
     function vLine(x: number, y0: number, y1: number): void {
         return
@@ -216,59 +186,23 @@ namespace nokialcd {
     //% block="clear screen"
     export function clear(): void {
         bytearray.fill(0)
-        writeBuffer(bytearray)
+        writeBufToLCD()
     }
 
-
-
-    //% blockId=nokialcd_write_buffer
-    //% block="LCD Wrt %data"
-    export function writeBuffer(data: Buffer): void {
-        pins.digitalWritePin(LCD_CE, 0)
-        for (let i = 0; i < data.length(); i++) {
-            pins.spiWrite(data[i])
-        }
-        pins.digitalWritePin(LCD_CE, 1)
-    }
-
-    //% blockId=nokialcd_sety
-    //% block="set y address %y"
     //% shim=nokialcd::setYAddr
-    export function setY(y: number): void {
+    function setYAddr(y: number): void {
         return
     }
 
-    //% blockId=nokialcd_setx
-    //% block="set X address %x"
     //% shim=nokialcd::setXAddr
-    export function setX(x: number): void {
-        return
-    }
-    //% shim=nokialcd::init2
-    export function init2(): void {
+    function setXAddr(x: number): void {
         return
     }
 
-
-    //% blockId=nokialcd_display_mode
-    //% block="set display mode %mode"
-    export function lcdDisplayMode(mode: number): void {
-        pins.digitalWritePin(LCD_DC, LCD_CMD)
-        LCD_DE = ((mode & 2) << 1) + (mode & 1)
-        writeByte(0x08 | LCD_DE)
-        pins.digitalWritePin(LCD_DC, LCD_DAT)
-
+    //% shim=nokialcd::writeSPIByte
+    function writeSPIByte(b: number) {
+        return
     }
-
-    export function lcdExtendedFunctions(temp: number, bias: number, vop: number): void {
-        pins.digitalWritePin(LCD_DC, LCD_CMD)
-        writeByte(0x04 | (0x03 & temp))
-        writeByte(0x10 | (0x07 & bias))
-        writeByte(0x80 | (0x7f & vop))
-    }
-
-
 }
 basic.showNumber(1)
 nokialcd.init()
-

@@ -13,9 +13,9 @@
 
 using namespace pxt;
     
+SPI spi(mbit_p15, mbit_p14, mbit_p13);
 namespace nokialcd {
 
-    SPI spi(mbit_p15, mbit_p14, mbit_p13);
     DigitalOut LCD_CE(mbit_p12);
     DigitalOut LCD_RST(mbit_p8);
     DigitalOut LCD_DC(mbit_p16);
@@ -24,23 +24,10 @@ namespace nokialcd {
     static int lcdDE = 0;
 
     //%
-    void SPIinit() {
-        LCD_CE = 1;
-        lcdDE = 0;
-        LCD_RST = 0;
-        spi.format(8,3);
-        spi.frequency(1000000);
-        wait(0.5);
-        LCD_RST = 1;
+    void setState(bool s) {
+        state = s;
     }
-    //%
-    void writeFunctionSet(int v, int h) {
-        LCD_DC = LCD_CMD;
-        LCD_CE = 0;
-        spi.write(0x20 | (v << 1) | (h & 1));
-        LCD_CE = 1;
-        LCD_DC = LCD_DAT;
-    }
+
     //%
     void writeSPIByte(int b) {
         LCD_CE = 0;
@@ -56,40 +43,6 @@ namespace nokialcd {
         LCD_CE = 1;
     }
     //%
-    Buffer initBuffer() {
-        bytearray = mkBuffer(NULL,504);
-        return bytearray;
-    }
-
-
-    //%
-    void setState(bool s) {
-        state = s;
-    }
-
-
-
-
-    void lcdDisplayMode(int mode) {
-        wait(0.0001);
-        lcdDE = ((mode & 2) << 1) + (mode & 1);
-        LCD_DC = LCD_CMD;
-        writeSPIByte(0x08 | lcdDE);
-        LCD_DC = LCD_DAT;
-    }
-    
-    void lcdExtendedFunctions(int temp, int bias, int vop) {
-        wait(0.0001);
-        LCD_DC = LCD_CMD;
-        writeSPIByte(0x21);
-        writeSPIByte(0x04 | (0x03 & temp));
-        writeSPIByte(0x10 | (0x07 & bias));
-        writeSPIByte(0x80 | (0x7f & vop));
-        writeSPIByte(0x20);
-        LCD_DC = LCD_DAT;
-    }
-
-    //%
     void setYAddr(int y) {
         LCD_DC = LCD_CMD;
         writeSPIByte(0x40 + y);
@@ -104,21 +57,55 @@ namespace nokialcd {
     }
 
 
-    //%
-    void init2() {
-        wait(0.5);
+    void lcdDisplayMode(int mode) {
+        lcdDE = ((mode & 2) << 1) + (mode & 1);
         LCD_DC = LCD_CMD;
+        writeSPIByte(0x08 | lcdDE);
+        LCD_DC = LCD_DAT;
+    }
+    void writeFunctionSet(int v, int h) {
+        LCD_DC = LCD_CMD;
+        LCD_CE = 0;
+        spi.write(0x20 | (v << 1) | (h & 1));
+        LCD_CE = 1;
+        LCD_DC = LCD_DAT;
+    }    
+    void lcdExtendedFunctions(int temp, int bias, int vop) {
+        LCD_DC = LCD_CMD;
+        writeSPIByte(0x21);
+        writeSPIByte(0x04 | (0x03 & temp));
+        writeSPIByte(0x10 | (0x07 & bias));
+        writeSPIByte(0x80 | (0x7f & vop));
         writeSPIByte(0x20);
+        LCD_DC = LCD_DAT;
+    }
+    //%
+    void SPIinit() {
+        LCD_CE = 1;
+        lcdDE = 0;
+        LCD_RST = 0;
+        spi.format(8,0);
+        spi.frequency(1000000);
         wait(0.5);
+        LCD_RST = 1;
+        writeFunctionSet(0, 1);
+        lcdExtendedFunctions(0, 3, 63);
+        writeFunctionSet(0, 0);
         lcdDisplayMode(2);
-        wait(0.5);
         setXAddr(0);
-        wait(0.5);
         setYAddr(0);
         setState(true);
     }
-
-
+    //%
+    void writeBufToLCD() {
+        setYAddr(0);
+        writeSPIBuf();
+    }
+    //%
+    Buffer initBuffer() {
+        bytearray = mkBuffer(NULL,504);
+        return bytearray;
+    }
 
     //%
     void pixel(int x, int y, bool state) {
@@ -219,11 +206,10 @@ namespace nokialcd {
                     r = r + 84;
                 }
             }
-            //FIL_B
             bitmask = (2 << (y1 & 7)) - 1;
             if (state) bytearray->data[r] |= bitmask;
             else bytearray->data[r] &= ~bitmask;
-        } 
+        }
     }
     
     //%
@@ -244,7 +230,7 @@ namespace nokialcd {
     }
 
     //%
-    void pLine(int x0, int y0, int x1, int y1) {    
+    void pLine(int x0, int y0, int x1, int y1) {
         int dx = abs(x1 - x0);
         if (dx == 0) {
             vLine(x0, y0, y1);
@@ -338,5 +324,4 @@ namespace nokialcd {
             }
         }
     }
-
 }
