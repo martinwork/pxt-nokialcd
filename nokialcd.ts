@@ -50,7 +50,7 @@ namespace nokialcd {
     //% blockId=nokialcd_init
     export function init(): void {
         //    pins.spiFormat(8, 0)
-        pins.spiFrequency(1000000)
+        //    pins.spiFrequency(1000000)
         SPIinit()
     }
 
