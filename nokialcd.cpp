@@ -13,7 +13,17 @@
 
 using namespace pxt;
     
-SPI spi(mbit_p15, mbit_p14, mbit_p13);
+namespace pins
+{
+    extern SPI* allocSPI();
+    extern int  spiWrite(int value);
+    extern void spiFrequency(int frequency);
+    extern void spiFormat(int bits, int mode);
+}
+
+using namespace pins;
+
+
 namespace nokialcd {
 
     DigitalOut LCD_CE(mbit_p12);
@@ -30,15 +40,17 @@ namespace nokialcd {
 
     //%
     void writeSPIByte(int b) {
+        auto spi = allocSPI();
         LCD_CE = 0;
-        spi.write(b);
+        spi->write(b);
         LCD_CE = 1;
     }
     //%
     void writeSPIBuf() {
+        auto spi = allocSPI();
         LCD_CE = 0;
         for (int i = 0; i < 504; i++) {
-            spi.write(bytearray->data[i]);
+            spi->write(bytearray->data[i]);
         }
         LCD_CE = 1;
     }
@@ -64,9 +76,10 @@ namespace nokialcd {
         LCD_DC = LCD_DAT;
     }
     void writeFunctionSet(int v, int h) {
+        auto spi = allocSPI();
         LCD_DC = LCD_CMD;
         LCD_CE = 0;
-        spi.write(0x20 | (v << 1) | (h & 1));
+        spi->write(0x20 | (v << 1) | (h & 1));
         LCD_CE = 1;
         LCD_DC = LCD_DAT;
     }    
@@ -84,8 +97,8 @@ namespace nokialcd {
         LCD_CE = 1;
         lcdDE = 0;
         LCD_RST = 0;
-        spi.format(8,0);
-        spi.frequency(1000000);
+        spiFormat(8,0);
+        spiFrequency(1000000);
         wait(0.5);
         LCD_RST = 1;
         writeFunctionSet(0, 1);
