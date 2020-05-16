@@ -19,6 +19,7 @@ namespace pins
     extern int  spiWrite(int value);
     extern void spiFrequency(int frequency);
     extern void spiFormat(int bits, int mode);
+    extern void spiTransfer(Buffer command, Buffer response);
 }
 
 using namespace pins;
@@ -47,12 +48,13 @@ namespace nokialcd {
     }
     //%
     void writeSPIBuf() {
-        auto spi = allocSPI();
         LCD_CE = 0;
-        uint8_t *data = bytearray->data;
-        for (int i = 0; i < 504; i++, data++) {
-            spi->write( *data);
-        }
+        //auto spi = allocSPI();
+        //uint8_t *data = bytearray->data;
+        //for (int i = 0; i < 504; i++, data++) {
+        //    spi->write( *data);
+        //}
+        spiTransfer( bytearray, null);
         LCD_CE = 1;
     }
     //%
