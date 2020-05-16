@@ -49,8 +49,9 @@ namespace nokialcd {
     void writeSPIBuf() {
         auto spi = allocSPI();
         LCD_CE = 0;
-        for (int i = 0; i < 504; i++) {
-            spi->write(bytearray->data[i]);
+        uint8_t *data = bytearray->data;
+        for (int i = 0; i < 504; i++, data++) {
+            spi->write( *data);
         }
         LCD_CE = 1;
     }
