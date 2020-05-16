@@ -54,7 +54,7 @@ namespace nokialcd {
         //for (int i = 0; i < 504; i++, data++) {
         //    spi->write( *data);
         //}
-        spiTransfer( bytearray, null);
+        spiTransfer( bytearray, NULL);
         LCD_CE = 1;
     }
     //%
